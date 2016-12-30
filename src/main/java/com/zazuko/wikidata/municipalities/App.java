@@ -1,6 +1,9 @@
 package com.zazuko.wikidata.municipalities;
 
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -26,17 +29,18 @@ public class App {
 
 
     
-    public static void createFsoWikiLinks() throws IOException, URISyntaxException {
+    public static void createFsoWikiLinks(Writer out) throws IOException, URISyntaxException {
 
         final String query = 
                 "PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n" +
                 "PREFIX gont: <https://gont.ch/>\n" +
                 "PREFIX dct: <http://purl.org/dc/terms/>\n" +
                 "\n" +
-                "SELECT DISTINCT ?municipality ?munid\n" +
+                "SELECT DISTINCT ?municipality ?munid ?name \n" +
                 "WHERE {\n" +
                 "  ?municipalityversion a gont:MunicipalityVersion ;\n" +
-                "  gont:municipality ?municipality .\n" +
+                "  gont:municipality ?municipality ;\n" +
+                "    gont:longName ?name.\n" +
                 "  MINUS { ?municipalityversion gont:abolitionEvent ?abolitionEvent . }\n" +
                 "  ?municipality a gont:PoliticalMunicipality .\n" +
                 "  ?municipality dct:identifier ?munid .\n" +
@@ -46,15 +50,20 @@ public class App {
             final IRI municipality = (IRI)queryResult.get("municipality");
             final int municipalityCode = Integer.parseInt(
                     ((Literal)queryResult.get("munid")).getLexicalForm());
-            IRI wikiMuni = getWikiMuni(municipalityCode);
-            System.out.println("<"+municipality.getUnicodeString()+"> rdfs:seeAlso <" 
-                    + wikiMuni.getUnicodeString()+"> .");
+            final String name = ((Literal)queryResult.get("name")).getLexicalForm()
+            final IRI wikiMuni = getWikiMuni(municipalityCode);
+            /*System.out.println("<"+municipality.getUnicodeString()+"> rdfs:seeAlso <" 
+                    + wikiMuni.getUnicodeString()+"> .");*/
+            final String wikiId = wikiMuni.getUnicodeString().substring(wikiMuni.getUnicodeString().lastIndexOf('/')+1);
+            out.write(wikiId+"\tP1448\tund:\""+name+"\" \n");
         }
-
+        out.flush();
     }
     
     public static void main(String... args) throws Exception {
-        createFsoWikiLinks();
+        FileWriter out = new FileWriter("out.txt");
+        createFsoWikiLinks(out);
+        out.close();
     }
 
     private static IRI getWikiMuni(int municipalityCode) throws IOException, URISyntaxException {
