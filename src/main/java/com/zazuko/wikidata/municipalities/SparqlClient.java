@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +41,8 @@ import org.apache.clerezza.commons.rdf.IRI;
 import org.apache.clerezza.commons.rdf.Language;
 import org.apache.clerezza.commons.rdf.RDFTerm;
 import org.apache.clerezza.commons.rdf.impl.utils.AbstractLiteral;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
 
@@ -50,19 +53,21 @@ import org.xml.sax.helpers.*;
 public class SparqlClient {
 
     final String endpoint;
-    boolean debug = true;
+    boolean debug = false;
 
     public SparqlClient(final String endpoint) {
         this.endpoint = endpoint;
     }
 
-    List<Map<String, RDFTerm>> queryResultSet(final String query) throws IOException {
+    List<Map<String, RDFTerm>> queryResultSet(final String query) throws IOException, URISyntaxException {
         CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpPost httpPost = new HttpPost(endpoint);
-        List<NameValuePair> nvps = new ArrayList<NameValuePair>();
+        URIBuilder builder = new URIBuilder(endpoint);
+        builder.addParameter("query", query);
+        HttpGet httpGet = new HttpGet(builder.build());
+        /*List<NameValuePair> nvps = new ArrayList<NameValuePair>();
         nvps.add(new BasicNameValuePair("query", query));
-        httpPost.setEntity(new UrlEncodedFormEntity(nvps));
-        CloseableHttpResponse response2 = httpclient.execute(httpPost);
+        httpGet.setEntity(new UrlEncodedFormEntity(nvps));*/
+        CloseableHttpResponse response2 = httpclient.execute(httpGet);
 
         try {
             HttpEntity entity2 = response2.getEntity();

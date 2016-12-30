@@ -1,6 +1,7 @@
 package com.zazuko.wikidata.municipalities;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -25,7 +26,7 @@ public class App {
 
 
     
-    public static void createFsoWikiLinks() throws IOException {
+    public static void createFsoWikiLinks() throws IOException, URISyntaxException {
 
         final String query = 
                 "PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n" +
@@ -46,8 +47,8 @@ public class App {
             final int municipalityCode = Integer.parseInt(
                     ((Literal)queryResult.get("munid")).getLexicalForm());
             IRI wikiMuni = getWikiMuni(municipalityCode);
-            /*System.out.println(wikiMuni+" sameAs " 
-                    + municipality.getUnicodeString());*/
+            System.out.println("<"+municipality.getUnicodeString()+"> rdfs:seeAlso <" 
+                    + wikiMuni.getUnicodeString()+"> .");
         }
 
     }
@@ -56,7 +57,7 @@ public class App {
         createFsoWikiLinks();
     }
 
-    private static IRI getWikiMuni(int municipalityCode) throws IOException {
+    private static IRI getWikiMuni(int municipalityCode) throws IOException, URISyntaxException {
         final String fixedLengthMuniCode = String.format("%04d",municipalityCode);
         final String query = 
                 "PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n" +
@@ -70,8 +71,13 @@ public class App {
         final List<Map<String, RDFTerm>> queryResults = wdSparqlClient.queryResultSet(query);
         if (queryResults.isEmpty()) {
             System.out.println("Municipality missing in wikidata "+municipalityCode);
+            throw new RuntimeException("Municipality missing in wikidata "+municipalityCode);
         }
-        return null;
+        if (queryResults.size() > 1) {
+            System.out.println("More than one municipality in wikidata with code "+municipalityCode);
+            throw new RuntimeException("More than one municipality in wikidata with code "+municipalityCode);
+        }
+        return (IRI) queryResults.iterator().next().get("wdr");
     }
     
 }
